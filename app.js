@@ -30,6 +30,16 @@ app.use(require('express-session')({
     }
 }));
 
+//Setup Passport
+app.use(passport.initialize());
+app.use(passport.session());
+const User = require('./models/user');
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+app.use('./api/auth', auth);
+
 app.get('*', (request, response) => {
    response.sendFile(path.resolve(__dirname, '../client/build', 'index.html'));
 });
