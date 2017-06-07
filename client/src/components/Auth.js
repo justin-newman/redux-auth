@@ -1,62 +1,52 @@
-const express = require('express');
-const router = express.Router();
-const User = require('../models/user');
-const passport = require('passport');
+import React from 'react';
+import { Header, Form, Button } from 'semantic-ui-react';
+import { authenticate } from '../actions/user';
+import { connect } from 'react-redux';
 
+class Auth extends React.Component {
+  defaults = { email: '', password: '' }
+  state = { ...this.defaults }
 
-const isAuthenticated = (req, res, next) => {
-  if (req.user)
-    next();
-  else
-    return res.json({});
+  handleChange = (e) => {
+    let { target: { id, value } } = e;
+    this.setState({ [id]: value });
+  }
+
+  handleSubmit = (e) => {
+    e.preventDefault();
+    let { title, history, dispatch } = this.props;
+    let { email, password } = this.state;
+    dispatch(authenticate(email, password, title, history))
+  }
+
+  render() {
+    let { title } = this.props;
+    let { email, password } = this.state;
+    return (
+      <div>
+        <Header as="h3">{title}</Header>
+        <Form onSubmit={this.handleSubmit}>
+          <Form.Input
+            id="email"
+            label="email"
+            required
+            type="email"
+            onChange={this.handleChange}
+            value={email}
+          />
+          <Form.Input
+            id="password"
+            label="password"
+            required
+            type="password"
+            onChange={this.handleChange}
+            value={password}
+          />
+          <Button>Submit</Button>
+        </Form>
+      </div>
+    )
+  }
 }
 
-const userAttrs = (user) => {
-  const { _id, username, role } = user;
-  return { _id, username, role }
-}
-
-
-router.post('/signup', (req, res) => {
-  let { email, password } = req.body;
-  User.register(new User({ username: email }), password, (err, user) => {
-    if (err)
-      return res.status(500).json(err);
-    
-    user.save( (err, user) => {
-      if (err)
-        return res.status(500).json(err);
-        
-      req.logIn(user, () => {
-        return res.json(userAttrs(user))
-      });
-    });
-  });
-});
-
-router.post('/signin', (req, res) => {
-  let { email, password } = req.body;
-  User.findOne({ username: email }, (err, user) => {
-    user.authenticate(password, (err, user, passwordErr) => {
-      if (err)
-        return res.json(500, 'User was not found')
-      if (passwordErr)
-        return res.json(500, passwordErr.message)
-      
-      req.logIn(user, () => {
-        return res.json(userAttrs(user));
-      });
-    });
-  });
-});
-
-router.delete('/sign_out', (req, res) => {
-  req.logout();
-  res.status(200).json({});
-});
-
-router.get('/user', isAuthenticated, (req, res) => {
-  return res.json(req.user);
-});
-
-module.exports = router;
+export default connect()(Auth);
